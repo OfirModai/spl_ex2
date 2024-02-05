@@ -144,7 +144,7 @@ public class Player implements Runnable {
             tokenCounter--;
         }
         if (tokenCounter == 3) {
-            // TODO - figure out what to do about calling the dealer
+            dealer.callDealer(id);
             tokenCounter = 0;
         }
     }
@@ -155,23 +155,23 @@ public class Player implements Runnable {
      * @post - the player's score is increased by 1.
      * @post - the player's score is updated in the ui.
      */
-    public void point(){
+    public void point() {
         int ignored = table.countCards(); // this part is just for demonstration in the unit tests
         env.ui.setScore(id, ++score);
         try {
             playerThread.wait(1000);
+        } catch (InterruptedException ignored2) {
         }
-        catch (InterruptedException ignored2){}
     }
 
     /**
      * Penalize a player and perform other related actions.
      */
-    public void penalty(){
+    public void penalty() {
         try {
             playerThread.wait(3000);
+        } catch (InterruptedException ignored) {
         }
-        catch (InterruptedException ignored){}
     }
 
     public int score() {
