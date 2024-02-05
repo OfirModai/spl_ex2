@@ -1,0 +1,9 @@
+<component name="libraryTable">
+  <library name="plexus-classworlds-2.7.0">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/apache-maven-3.9.6/boot/plexus-classworlds-2.7.0.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>
