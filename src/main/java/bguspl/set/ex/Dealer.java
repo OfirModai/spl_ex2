@@ -1,7 +1,10 @@
 package bguspl.set.ex;
 
 import bguspl.set.Env;
+import bguspl.set.Util;
+import bguspl.set.UtilImpl;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -36,12 +39,14 @@ public class Dealer implements Runnable {
      * The time when the dealer needs to reshuffle the deck due to turn timeout.
      */
     private long reshuffleTime = Long.MAX_VALUE;
+    private List<Integer> calls;
 
     public Dealer(Env env, Table table, Player[] players) {
         this.env = env;
         this.table = table;
         this.players = players;
         deck = IntStream.range(0, env.config.deckSize).boxed().collect(Collectors.toList());
+        calls = new ArrayList<Integer>();
     }
 
     /**
@@ -89,12 +94,25 @@ public class Dealer implements Runnable {
     }
 
     /**
-     * Checks cards should be removed from the table and removes them.
+     * Checks what cards should be removed from the table and removes them.
      */
+    public void callDealer(int id) {
+        if (!calls.contains(id)) calls.add(id);
+    }
+
     private void removeCardsFromTable() {
-        for (int i = 0; i < env.config.tableSize; i++) {
-            table.removeCard(i);
-        }
+        if (calls.size() == 0) return;
+        int playerId = calls.remove(0);
+        int[] set = table.getSetById(playerId);
+        table.resetTokensById(playerId);
+        if (env.util.testSet(set)) {
+            for (int i = 0; i < set.length; i++) {
+                table.removeCard(set[i]);
+            }
+            placeCardsOnTable();
+            players[playerId].point();
+        } else
+            players[playerId].penalty();
     }
 
     /**
@@ -125,13 +143,21 @@ public class Dealer implements Runnable {
      * Returns all the cards from the table to the deck.
      */
     private void removeAllCardsFromTable() {
-        // TODO implement
+        for (int i = 0; i < env.config.tableSize; i++) {
+            table.removeCard(i);
+        }
     }
 
     /**
      * Check who is/are the winner/s and displays them.
      */
     private void announceWinners() {
-        // TODO implement
+        int[] playersId = new int[players.length];
+        int i = 0;
+        for (Player player : players) {
+            playersId[i] = player.id;
+            i++;
+        }
+        env.ui.announceWinner(playersId);
     }
 }

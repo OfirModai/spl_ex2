@@ -130,7 +130,6 @@ public class Table {
         if (!isTokenPlaced(player, slot)) {
             env.ui.placeToken(player, slot);
             tokens[slot][player] = true;
-            System.out.println("idiot!"); //////////////////////////////////////////////////////
         }
     }
 
@@ -150,7 +149,22 @@ public class Table {
         return false;
     }
 
-    public boolean isSlotEmpty(int slot){
+    public int[] getSetById(int id) {
+        int[] set = new int[3];
+        int indx = 0;
+        for (int i = 0; i < tokens.length; i++) {
+            if (tokens[i][id]) set[indx++] = slotToCard[i];
+        }
+        return set;
+    }
+
+    public void resetTokensById(int playerId) {
+        for (int i = 0; i < tokens.length; i++) {
+            tokens[i][playerId] = false;
+        }
+    }
+
+    public boolean isSlotEmpty(int slot) {
         return slotToCard[slot] == null;
     }
 }
