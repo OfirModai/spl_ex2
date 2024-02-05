@@ -92,14 +92,19 @@ public class Dealer implements Runnable {
      * Checks cards should be removed from the table and removes them.
      */
     private void removeCardsFromTable() {
-        // TODO implement
+        for (int i = 0; i < env.config.tableSize; i++) {
+            table.removeCard(i);
+        }
     }
 
     /**
      * Check if any cards can be removed from the deck and placed on the table.
      */
     private void placeCardsOnTable() {
-        // TODO implement
+        for (int i = 0; deck.size() > 0 && i < env.config.tableSize; i++) {
+            if (table.isSlotEmpty(i))
+                table.placeCard(deck.remove(0), i);
+        }
     }
 
     /**

@@ -51,6 +51,16 @@ public class Player implements Runnable {
     private int score;
 
     /**
+     * counts the num of tokens that has been placed by the player
+     */
+    private int tokenCounter;
+
+    /**
+     * player needs to communicate with the dealer
+     */
+    private final Dealer dealer;
+
+    /**
      * The class constructor.
      *
      * @param env    - the environment object.
@@ -64,6 +74,9 @@ public class Player implements Runnable {
         this.table = table;
         this.id = id;
         this.human = human;
+        this.tokenCounter = 0;
+        this.dealer = dealer;
+        this.score = 0;
     }
 
     /**
@@ -76,9 +89,13 @@ public class Player implements Runnable {
         if (!human) createArtificialIntelligence();
 
         while (!terminate) {
+
             // TODO implement main player loop
         }
-        if (!human) try { aiThread.join(); } catch (InterruptedException ignored) {}
+        if (!human) try {
+            aiThread.join();
+        } catch (InterruptedException ignored) {
+        }
         env.logger.info("thread " + Thread.currentThread().getName() + " terminated.");
     }
 
@@ -93,8 +110,11 @@ public class Player implements Runnable {
             while (!terminate) {
                 // TODO implement player key press simulator
                 try {
-                    synchronized (this) { wait(); }
-                } catch (InterruptedException ignored) {}
+                    synchronized (this) {
+                        wait();
+                    }
+                } catch (InterruptedException ignored) {
+                }
             }
             env.logger.info("thread " + Thread.currentThread().getName() + " terminated.");
         }, "computer-" + id);
@@ -114,7 +134,18 @@ public class Player implements Runnable {
      * @param slot - the slot corresponding to the key pressed.
      */
     public void keyPressed(int slot) {
-        // TODO implement
+        if (tokenCounter == 3)
+            throw new RuntimeException("It's a bug - too many tokens has been placed!");
+        if (!table.isTokenPlaced(id, slot)) {
+            table.placeToken(id, slot);
+            tokenCounter++;
+        } else {
+            table.removeToken(id, slot);
+            tokenCounter--;
+        }
+        if (tokenCounter == 3) {
+            // TODO - figure out what to do about calling the dealer
+        }
     }
 
     /**
@@ -123,18 +154,17 @@ public class Player implements Runnable {
      * @post - the player's score is increased by 1.
      * @post - the player's score is updated in the ui.
      */
-    public void point() {
-        // TODO implement
-
+    public void point() throws InterruptedException {
         int ignored = table.countCards(); // this part is just for demonstration in the unit tests
         env.ui.setScore(id, ++score);
+        playerThread.wait(1000);
     }
 
     /**
      * Penalize a player and perform other related actions.
      */
-    public void penalty() {
-        // TODO implement
+    public void penalty() throws InterruptedException {
+        playerThread.wait(3000);
     }
 
     public int score() {

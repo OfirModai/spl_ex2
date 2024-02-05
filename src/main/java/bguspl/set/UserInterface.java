@@ -23,6 +23,7 @@ public interface UserInterface {
      * @param player - the card id.
      * @param slot - the slot number (for grid; slot = row*row.length + column).
      */
+
     void placeToken(int player, int slot);
 
     /**
