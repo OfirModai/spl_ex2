@@ -53,7 +53,7 @@ class PlayerTest {
     }
 
     @Test
-    void point() {
+    void point() throws InterruptedException {
 
         // force table.countCards to return 3
         when(table.countCards()).thenReturn(3); // this part is just for demonstration
