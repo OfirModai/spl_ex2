@@ -2,6 +2,9 @@ package bguspl.set.ex;
 
 import bguspl.set.Env;
 
+import java.util.ArrayList;
+import java.util.concurrent.atomic.AtomicInteger;
+
 /**
  * This class manages the players' threads and data
  *
@@ -53,12 +56,14 @@ public class Player implements Runnable {
     /**
      * counts the num of tokens that has been placed by the player
      */
-    private int tokenCounter;
+    private AtomicInteger tokenCounter = new AtomicInteger();
 
     /**
      * player needs to communicate with the dealer
      */
     private final Dealer dealer;
+
+    private ArrayList<Integer> keysPressed;
 
     /**
      * The class constructor.
@@ -74,9 +79,10 @@ public class Player implements Runnable {
         this.table = table;
         this.id = id;
         this.human = human;
-        this.tokenCounter = 0;
+        this.tokenCounter.set(0);
         this.dealer = dealer;
         this.score = 0;
+        this.keysPressed = new ArrayList<>();
     }
 
     /**
@@ -90,6 +96,8 @@ public class Player implements Runnable {
 
         while (!terminate) {
 
+            if (!keysPressed.isEmpty()) //operates the first keyPressed in line
+                keyPressedFromPlayerThread(keysPressed.remove(0));
             // TODO implement main player loop
         }
         if (!human) try {
@@ -133,20 +141,30 @@ public class Player implements Runnable {
      *
      * @param slot - the slot corresponding to the key pressed.
      */
-    public void keyPressed(int slot) {
-        if (tokenCounter == 3)
+    private void keyPressedFromPlayerThread(int slot) {
+        if (tokenCounter.get() == 3)
             throw new RuntimeException("It's a bug - too many tokens has been placed!");
         if (!table.isTokenPlaced(id, slot)) {
             table.placeToken(id, slot);
-            tokenCounter++;
+            tokenCounter.incrementAndGet();
         } else {
             table.removeToken(id, slot);
-            tokenCounter--;
+            tokenCounter.decrementAndGet();
         }
-        if (tokenCounter == 3) {
+        if (tokenCounter.get() == 3) {
             dealer.callDealer(id);
-            tokenCounter = 0;
+            keysPressed.clear();
+            tokenCounter.compareAndSet(3, 0);
         }
+    }
+
+    public void keyPressed(int slot) {
+        keysPressed.add(slot);
+    }
+
+
+    public void decreaseTokenCounter() {
+        tokenCounter.decrementAndGet();
     }
 
     /**

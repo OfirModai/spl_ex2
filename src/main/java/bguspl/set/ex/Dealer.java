@@ -60,6 +60,10 @@ public class Dealer implements Runnable {
             timerLoop();
             updateTimerDisplay(false);
             removeAllCardsFromTable();
+            for (int i = 0; i < players.length; i++) {
+                Thread t = new Thread(players[i], "player " + i);
+                t.start();
+            }
         }
         announceWinners();
         env.logger.info("thread " + Thread.currentThread().getName() + " terminated.");
@@ -68,7 +72,7 @@ public class Dealer implements Runnable {
     /**
      * The inner loop of the dealer thread that runs as long as the countdown did not time out.
      */
-    private void timerLoop() {
+    private void timerLoop() { // maybe we should consider small delay between checks! -omer
         while (!terminate && System.currentTimeMillis() < reshuffleTime) {
             sleepUntilWokenOrTimeout();
             updateTimerDisplay(false);
@@ -96,7 +100,7 @@ public class Dealer implements Runnable {
     /**
      * Checks what cards should be removed from the table and removes them.
      */
-    public void callDealer(int id) {
+    public synchronized void callDealer(int id) {
         if (!calls.contains(id)) calls.add(id);
     }
 
@@ -107,7 +111,8 @@ public class Dealer implements Runnable {
         table.resetTokensById(playerId);
         if (env.util.testSet(set)) {
             for (int i = 0; i < set.length; i++) {
-                table.removeCard(set[i]);
+                removeCardAndNotify(set[i]);
+
             }
             placeCardsOnTable();
             players[playerId].point();
@@ -123,6 +128,18 @@ public class Dealer implements Runnable {
             if (table.isSlotEmpty(i))
                 table.placeCard(deck.remove(0), i);
         }
+    }
+
+    private void removeCardAndNotify(int slot) {
+        for (int i = 0; i < players.length; i++) {
+            if (table.isTokenPlaced(i, slot)) {
+                players[i].decreaseTokenCounter();
+
+            }
+        }
+
+        table.removeCard(slot);
+
     }
 
     /**
