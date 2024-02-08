@@ -3,6 +3,7 @@ package bguspl.set.ex;
 import bguspl.set.Env;
 
 import java.util.ArrayList;
+import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -51,12 +52,12 @@ public class Player implements Runnable {
     /**
      * The current score of the player.
      */
-    private int score;
+    private volatile int score;
 
     /**
      * counts the num of tokens that has been placed by the player
      */
-    private AtomicInteger tokenCounter = new AtomicInteger();
+    private volatile AtomicInteger tokenCounter = new AtomicInteger();
 
     /**
      * player needs to communicate with the dealer
@@ -95,10 +96,14 @@ public class Player implements Runnable {
         if (!human) createArtificialIntelligence();
 
         while (!terminate) {
-
             if (!keysPressed.isEmpty()) //operates the first keyPressed in line
                 keyPressedFromPlayerThread(keysPressed.remove(0));
-            // TODO implement main player loop
+            else {
+                try {
+                    Thread.currentThread().wait();
+                } catch (InterruptedException ignored) {
+                }
+            }
         }
         if (!human) try {
             aiThread.join();
@@ -114,8 +119,10 @@ public class Player implements Runnable {
     private void createArtificialIntelligence() {
         // note: this is a very, very smart AI (!)
         aiThread = new Thread(() -> {
-            env.logger.info("thread " + Thread.currentThread().getName() + " starting.");
+            env.logger.info("generator_thread " + Thread.currentThread().getName() + " starting.");
             while (!terminate) {
+                int randomSlot = (int) (Math.random() * env.config.tableSize);
+
                 // TODO implement player key press simulator
                 try {
                     synchronized (this) {
@@ -133,7 +140,7 @@ public class Player implements Runnable {
      * Called when the game should be terminated.
      */
     public void terminate() {
-        // TODO implement
+        terminate = false;
     }
 
     /**
@@ -144,7 +151,7 @@ public class Player implements Runnable {
     private void keyPressedFromPlayerThread(int slot) {
         if (tokenCounter.get() == 3)
             throw new RuntimeException("It's a bug - too many tokens has been placed!");
-        if (!table.isTokenPlaced(id, slot)) {
+        if (!table.isSlotEmpty(slot) && !table.isTokenPlaced(id, slot)) {
             table.placeToken(id, slot);
             tokenCounter.incrementAndGet();
         } else {
@@ -160,6 +167,7 @@ public class Player implements Runnable {
 
     public void keyPressed(int slot) {
         keysPressed.add(slot);
+        playerThread.notify();
     }
 
 
@@ -177,7 +185,7 @@ public class Player implements Runnable {
         int ignored = table.countCards(); // this part is just for demonstration in the unit tests
         env.ui.setScore(id, ++score);
         try {
-            playerThread.wait(1000);
+            playerThread.wait(env.config.pointFreezeMillis);
         } catch (InterruptedException ignored2) {
         }
     }
@@ -187,7 +195,7 @@ public class Player implements Runnable {
      */
     public void penalty() {
         try {
-            playerThread.wait(3000);
+            playerThread.wait(env.config.penaltyFreezeMillis);
         } catch (InterruptedException ignored) {
         }
     }

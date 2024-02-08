@@ -114,7 +114,7 @@ public class Table {
         cardToSlot[slotToCard[slot]] = null;
         slotToCard[slot] = null;
         for (int i = 0; i < tokens[0].length; i++) {
-            if(tokens[slot][i])
+            if (tokens[slot][i])
                 tokens[slot][i] = false;
         }
 
@@ -131,7 +131,7 @@ public class Table {
     }
 
     public void placeToken(int player, int slot) {
-        if (!isTokenPlaced(player, slot)) {
+        if (!isSlotEmpty(slot) && !isTokenPlaced(player, slot)) {
             env.ui.placeToken(player, slot);
             tokens[slot][player] = true;
         }
