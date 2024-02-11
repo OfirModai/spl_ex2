@@ -155,7 +155,7 @@ public class Table {
     }
 
     public int[] getSetById(int id) {
-        int[] set = new int[env.config.featureCount];
+        int[] set = new int[env.config.featureSize]; //omer change - from: featureCount -> to featureSize
         int indx = 0;
         for (int i = 0; i < tokens.length; i++) {
             if (tokens[i][id])
@@ -174,6 +174,7 @@ public class Table {
 
     public void resetTokensById(int playerId) {
         for (int i = 0; i < tokens.length; i++) {
+            removeToken(playerId, i); // omer - table didn't remove the tokens from the cards
             tokens[i][playerId] = false;
         }
     }

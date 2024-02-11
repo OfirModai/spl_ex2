@@ -139,7 +139,7 @@ public class Dealer implements Runnable {
         table.resetTokensById(playerId);
         if (env.util.testSet(set)) {
             for (int i = 0; i < set.length; i++) {
-                removeCardAndNotify(set[i]);
+                removeCardAndNotify(table.cardToSlot[set[i]]); // was set[i]
             }
             placeCardsOnTable();
             players[playerId].point();
