@@ -2,9 +2,14 @@ package bguspl.set.ex;
 
 import bguspl.set.Env;
 
-import java.util.ArrayList;
-import java.util.Random;
+import java.sql.Time;
+import java.util.concurrent.BlockingDeque;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import static java.util.logging.Level.INFO;
 
 /**
  * This class manages the players' threads and data
@@ -52,19 +57,23 @@ public class Player implements Runnable {
     /**
      * The current score of the player.
      */
-    private volatile int score;
+    private volatile AtomicInteger score;
 
     /**
      * counts the num of tokens that has been placed by the player
      */
-    private volatile AtomicInteger tokenCounter = new AtomicInteger();
+    private volatile AtomicInteger tokenCounter;
 
     /**
      * player needs to communicate with the dealer
      */
     private final Dealer dealer;
 
-    private ArrayList<Integer> keysPressed;
+    private LinkedBlockingDeque<Integer> keysPressed;
+
+    private volatile AtomicBoolean dealerChecks;
+
+    private volatile long toSleep;
 
     /**
      * The class constructor.
@@ -80,10 +89,11 @@ public class Player implements Runnable {
         this.table = table;
         this.id = id;
         this.human = human;
-        this.tokenCounter.set(0);
+        this.tokenCounter = new AtomicInteger(0);
         this.dealer = dealer;
-        this.score = 0;
-        this.keysPressed = new ArrayList<>();
+        this.score = new AtomicInteger(0);
+        this.keysPressed = new LinkedBlockingDeque<>(env.config.featureCount);
+        this.dealerChecks = new AtomicBoolean(false);
     }
 
     /**
@@ -96,13 +106,11 @@ public class Player implements Runnable {
         if (!human) createArtificialIntelligence();
 
         while (!terminate) {
-            if (!keysPressed.isEmpty()) //operates the first keyPressed in line
-                keyPressedFromPlayerThread(keysPressed.remove(0));
-            else {
-                try {
-                    Thread.currentThread().wait();
-                } catch (InterruptedException ignored) {
-                }
+            try {
+                Thread.sleep(toSleep);
+                toSleep = 0;
+                keyPressedFromPlayerThread(keysPressed.take());
+            } catch (InterruptedException ignored) {
             }
         }
         if (!human) try {
@@ -122,14 +130,14 @@ public class Player implements Runnable {
             env.logger.info("generator_thread " + Thread.currentThread().getName() + " starting.");
             while (!terminate) {
                 int randomSlot = (int) (Math.random() * env.config.tableSize);
+                keyPressed(randomSlot);
+                /*try {
+                    synchronized (aiLock) {
 
-                // TODO implement player key press simulator
-                try {
-                    synchronized (this) {
                         wait();
                     }
                 } catch (InterruptedException ignored) {
-                }
+                }*/
             }
             env.logger.info("thread " + Thread.currentThread().getName() + " terminated.");
         }, "computer-" + id);
@@ -140,7 +148,7 @@ public class Player implements Runnable {
      * Called when the game should be terminated.
      */
     public void terminate() {
-        terminate = false;
+        terminate = true;
     }
 
     /**
@@ -149,25 +157,38 @@ public class Player implements Runnable {
      * @param slot - the slot corresponding to the key pressed.
      */
     private void keyPressedFromPlayerThread(int slot) {
-        if (tokenCounter.get() == 3)
+        if (tokenCounter.get() == 3) //just for ourselves
             throw new RuntimeException("It's a bug - too many tokens has been placed!");
-        if (!table.isSlotEmpty(slot) && !table.isTokenPlaced(id, slot)) {
+
+        if (table.isSlotEmpty(slot)) return;
+
+        if (!table.isTokenPlaced(id, slot)) {
             table.placeToken(id, slot);
             tokenCounter.incrementAndGet();
+
+            //calls dealer for set check
+            if (tokenCounter.get() == 3) {
+                dealer.callDealer(id);
+                dealerChecks.compareAndSet(false, true);
+                keysPressed.clear();
+                tokenCounter.compareAndSet(3, 0);
+                try {
+                    Thread.currentThread().wait();
+                } catch (InterruptedException ignored) {
+                }
+            }
         } else {
             table.removeToken(id, slot);
             tokenCounter.decrementAndGet();
         }
-        if (tokenCounter.get() == 3) {
-            dealer.callDealer(id);
-            keysPressed.clear();
-            tokenCounter.compareAndSet(3, 0);
-        }
     }
 
     public void keyPressed(int slot) {
-        keysPressed.add(slot);
-        playerThread.notify();
+        try {
+            if (!dealerChecks.get())
+                keysPressed.put(slot);
+        } catch (InterruptedException ignored) {
+        }
     }
 
 
@@ -183,24 +204,22 @@ public class Player implements Runnable {
      */
     public void point() {
         int ignored = table.countCards(); // this part is just for demonstration in the unit tests
-        env.ui.setScore(id, ++score);
-        try {
-            playerThread.wait(env.config.pointFreezeMillis);
-        } catch (InterruptedException ignored2) {
-        }
+        env.ui.setScore(id, score.incrementAndGet());
+        playerThread.notify();
+        toSleep = env.config.pointFreezeMillis;
+        dealerChecks.compareAndSet(true, false);
     }
 
     /**
      * Penalize a player and perform other related actions.
      */
     public void penalty() {
-        try {
-            playerThread.wait(env.config.penaltyFreezeMillis);
-        } catch (InterruptedException ignored) {
-        }
+        playerThread.notify();
+        toSleep = env.config.penaltyFreezeMillis;
+        dealerChecks.compareAndSet(true, false);
     }
 
     public int score() {
-        return score;
+        return score.get();
     }
 }

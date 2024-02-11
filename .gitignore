@@ -1,0 +1,8 @@
+#ignore all unrelevant the directories
+/.devcontainer
+/.github
+/.idea
+/.vscode
+/apache-maven-3.9.6-bin
+/target
+

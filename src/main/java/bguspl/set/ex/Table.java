@@ -3,6 +3,7 @@ package bguspl.set.ex;
 import bguspl.set.Env;
 
 import java.util.Arrays;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -22,14 +23,14 @@ public class Table {
     /**
      * Mapping between a slot and the card placed in it (null if none).
      */
-    protected final Integer[] slotToCard; // card per slot (if any)
+    protected volatile Integer[] slotToCard; // card per slot (if any)
 
     /**
      * Mapping between a card and the slot it is in (null if none).
      */
-    protected final Integer[] cardToSlot; // slot per card (if any)
+    protected volatile Integer[] cardToSlot; // slot per card (if any)
 
-    private boolean[][] tokens;
+    private volatile boolean[][] tokens;
 
     /**
      * Constructor for testing.
@@ -127,7 +128,7 @@ public class Table {
      * @param slot   - the slot on which to place the token.
      */
     public boolean isTokenPlaced(int player, int slot) {
-        return (tokens[slot][player]);
+        return (slotToCard[slot] != null && tokens[slot][player]);
     }
 
     public void placeToken(int player, int slot) {
@@ -154,12 +155,21 @@ public class Table {
     }
 
     public int[] getSetById(int id) {
-        int[] set = new int[3];
+        int[] set = new int[env.config.featureCount];
         int indx = 0;
         for (int i = 0; i < tokens.length; i++) {
-            if (tokens[i][id]) set[indx++] = slotToCard[i];
+            if (tokens[i][id])
+                set[indx++] = slotToCard[i];
         }
         return set;
+    }
+
+    public List<Integer> getCards() {
+        List<Integer> cardList = new LinkedList<>();
+        for (Integer card : slotToCard) {
+            cardList.add(card);
+        }
+        return cardList;
     }
 
     public void resetTokensById(int playerId) {
