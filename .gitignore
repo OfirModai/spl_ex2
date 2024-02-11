@@ -1,4 +1,4 @@
-#ignore all unrelevant the directories
+#ignore all unrelevant directories
 /.devcontainer
 /.github
 /.idea
