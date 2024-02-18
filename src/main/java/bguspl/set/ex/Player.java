@@ -172,11 +172,11 @@ public class Player implements Runnable {
                 dealerChecks.compareAndSet(false, true);
                 keysPressed.clear();
                 tokenCounter.compareAndSet(3, 0);
-                try {
-                    synchronized (this) { //OMER
-                        this.wait(); //OMER, was: Thread.currentThread().wait()
-                    }// OMER
-                } catch (InterruptedException ignored) {
+                synchronized (this) {
+                    try {
+                        this.wait();
+                    } catch (InterruptedException ignored) {
+                    }
                 }
             }
         } else {
@@ -207,25 +207,25 @@ public class Player implements Runnable {
     public void point() {
         int ignored = table.countCards(); // this part is just for demonstration in the unit tests
         env.ui.setScore(id, score.incrementAndGet());
-        synchronized (this) { // OMER
-            this.notify(); // OMER, was: playerThread.notify();
-        }// OMER
         toSleep = env.config.pointFreezeMillis;
         dealerChecks.compareAndSet(true, false);
+        synchronized (this) {
+            this.notify();// only 1 thread is waiting
+        }
     }
 
     /**
      * Penalize a player and perform other related actions.
      */
     public void penalty() {
-        synchronized (this) { // OMER
-            this.notify(); // OMER, was: playerThread.notify()
-        }// OMER
         toSleep = env.config.penaltyFreezeMillis;
         dealerChecks.compareAndSet(true, false);
+        synchronized (this) {
+            this.notify(); // only 1 thread is waiting
+        }
     }
 
-    public int score() {
+    public int score() { // not synchronized by purpose: will return the right score for the very second it was called.
         return score.get();
     }
 }

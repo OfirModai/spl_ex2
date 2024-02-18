@@ -10,10 +10,12 @@ import java.util.stream.Collectors;
 
 /**
  * This class contains the data that is visible to the player.
+ * all functions in class are synchronized
  *
  * @inv slotToCard[x] == y iff cardToSlot[y] == x
  */
 public class Table {
+
 
     /**
      * The game environment object.
@@ -53,14 +55,14 @@ public class Table {
      * @param env - the game environment objects.
      */
     public Table(Env env) {
-
         this(env, new Integer[env.config.tableSize], new Integer[env.config.deckSize]);
     }
 
     /**
      * This method prints all possible legal sets of cards that are currently on the table.
+     * uses
      */
-    public void hints() {
+    public synchronized void hints() {
         List<Integer> deck = Arrays.stream(slotToCard).filter(Objects::nonNull).collect(Collectors.toList());
         env.util.findSets(deck, Integer.MAX_VALUE).forEach(set -> {
             StringBuilder sb = new StringBuilder().append("Hint: Set found: ");
@@ -75,7 +77,7 @@ public class Table {
      *
      * @return - the number of cards on the table.
      */
-    public int countCards() {
+    public synchronized int countCards() {
         int cards = 0;
         for (Integer card : slotToCard)
             if (card != null)
@@ -90,7 +92,7 @@ public class Table {
      * @param slot - the slot in which the card should be placed.
      * @post - the card placed is on the table, in the assigned slot.
      */
-    public void placeCard(int card, int slot) {
+    public synchronized void placeCard(int card, int slot) {
         try {
             Thread.sleep(env.config.tableDelayMillis);
         } catch (InterruptedException ignored) {
@@ -105,7 +107,7 @@ public class Table {
      *
      * @param slot - the slot from which to remove the card.
      */
-    public void removeCard(int slot) {
+    public synchronized void removeCard(int slot) {
         if (slotToCard[slot] == null) return;
         try {
             Thread.sleep(env.config.tableDelayMillis);
@@ -118,7 +120,6 @@ public class Table {
             if (tokens[slot][i])
                 tokens[slot][i] = false;
         }
-
     }
 
     /**
@@ -127,11 +128,11 @@ public class Table {
      * @param player - the player the token belongs to.
      * @param slot   - the slot on which to place the token.
      */
-    public boolean isTokenPlaced(int player, int slot) {
+    public synchronized boolean isTokenPlaced(int player, int slot) {
         return (slotToCard[slot] != null && tokens[slot][player]);
     }
 
-    public void placeToken(int player, int slot) {
+    public synchronized void placeToken(int player, int slot) {
         if (!isSlotEmpty(slot) && !isTokenPlaced(player, slot)) {
             env.ui.placeToken(player, slot);
             tokens[slot][player] = true;
@@ -145,7 +146,7 @@ public class Table {
      * @param slot   - the slot from which to remove the token.
      * @return - true iff a token was successfully removed.
      */
-    public boolean removeToken(int player, int slot) {
+    public synchronized boolean removeToken(int player, int slot) {
         if (isTokenPlaced(player, slot)) {
             env.ui.removeToken(player, slot);
             tokens[slot][player] = false;
@@ -154,7 +155,7 @@ public class Table {
         return false;
     }
 
-    public int[] getSetById(int id) {
+    public synchronized int[] getSetById(int id) {
         int[] set = new int[env.config.featureSize]; //omer change - from: featureCount -> to featureSize
         int indx = 0;
         for (int i = 0; i < tokens.length; i++) {
@@ -164,7 +165,7 @@ public class Table {
         return set;
     }
 
-    public List<Integer> getCards() {
+    public synchronized List<Integer> getCards() {
         List<Integer> cardList = new LinkedList<>();
         for (Integer card : slotToCard) {
             cardList.add(card);
@@ -172,14 +173,14 @@ public class Table {
         return cardList;
     }
 
-    public void resetTokensById(int playerId) {
+    public synchronized void resetTokensById(int playerId) {
         for (int i = 0; i < tokens.length; i++) {
             removeToken(playerId, i); // omer - table didn't remove the tokens from the cards
             tokens[i][playerId] = false;
         }
     }
 
-    public boolean isSlotEmpty(int slot) {
+    public synchronized boolean isSlotEmpty(int slot) {
         return slotToCard[slot] == null;
     }
 }

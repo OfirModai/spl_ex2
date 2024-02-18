@@ -2,10 +2,10 @@ package bguspl.set.ex;
 
 import bguspl.set.Env;
 
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Queue;
+import java.util.*;
+import java.util.concurrent.LinkedBlockingDeque;
 import java.util.stream.Collectors;
+import java.util.Arrays;
 import java.util.stream.IntStream;
 
 /**
@@ -37,7 +37,7 @@ public class Dealer implements Runnable {
     /**
      * The time when the dealer needs to reshuffle the deck due to turn timeout.
      */
-    private Queue<Integer> calls;
+    private LinkedBlockingDeque<Integer> calls;
     private long starting_time;
 
 
@@ -46,7 +46,7 @@ public class Dealer implements Runnable {
         this.table = table;
         this.players = players;
         deck = IntStream.range(0, env.config.deckSize).boxed().collect(Collectors.toList());
-        calls = new LinkedList<>();
+        calls = new LinkedBlockingDeque<>();
     }
 
     /**
@@ -59,12 +59,14 @@ public class Dealer implements Runnable {
             Thread t = new Thread(players[i], "player " + i);
             t.start();
         }
+        deckShuffle();
         while (!shouldFinish()) {
             placeCardsOnTable();
             timerLoop();
             updateTimerDisplay(false);
             killPlayerThreads(); // to check if this is what they want
             removeAllCardsFromTable();
+            deckShuffle();
             for (int i = 0; i < players.length; i++) {
                 Thread t = new Thread(players[i], "player " + i);
                 t.start();
@@ -83,6 +85,7 @@ public class Dealer implements Runnable {
         starting_time = System.currentTimeMillis();
         boolean timeout;
         boolean keepPlaying = true;
+        table.hints();
         while (!terminate && keepPlaying) {  // !timeout & env.util.findSets(table.getCards(), 1).size() > 0};
             sleepUntilWokenOrTimeout();
             updateTimerDisplay(false);
@@ -122,7 +125,7 @@ public class Dealer implements Runnable {
     }
 
 
-    public synchronized void callDealer(int id) {
+    public void callDealer(int id) {
         if (!calls.contains(id)) calls.add(id);
     }
 
@@ -130,11 +133,9 @@ public class Dealer implements Runnable {
      * Checks what cards should be removed from the table and removes them.
      */
     private void removeCardsFromTable() {
-        if (calls.size() == 0) return;
+        if (calls.isEmpty()) return;
         int playerId;
-        synchronized (this) {
-            playerId = calls.remove();
-        }
+        playerId = calls.remove();
         int[] set = table.getSetById(playerId);
         table.resetTokensById(playerId);
         if (env.util.testSet(set)) {
@@ -143,6 +144,7 @@ public class Dealer implements Runnable {
             }
             placeCardsOnTable();
             players[playerId].point();
+            table.hints(); /// to delete
         } else
             players[playerId].penalty();
     }
@@ -152,8 +154,10 @@ public class Dealer implements Runnable {
      */
     private void placeCardsOnTable() {
         for (int i = 0; deck.size() > 0 && i < env.config.tableSize; i++) {
-            if (table.isSlotEmpty(i))
+            if (table.isSlotEmpty(i)) {
+                int idx = (int) (Math.random() * deck.size());
                 table.placeCard(deck.remove(0), i);
+            }
         }
     }
 
@@ -191,7 +195,6 @@ public class Dealer implements Runnable {
             env.ui.setCountdown(env.config.turnTimeoutMillis - (System.currentTimeMillis() - starting_time),
                     env.config.turnTimeoutWarningMillis < System.currentTimeMillis() - starting_time);
         }
-
     }
 
     /**
@@ -215,4 +218,10 @@ public class Dealer implements Runnable {
         }
         env.ui.announceWinner(playersId);
     }
+
+    // shuffles the deck
+    private void deckShuffle() {
+        Collections.shuffle(deck);
+    }
+
 }
