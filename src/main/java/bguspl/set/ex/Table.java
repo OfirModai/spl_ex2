@@ -107,6 +107,7 @@ public class Table {
      *
      * @param slot - the slot from which to remove the card.
      */
+
     public synchronized void removeCard(int slot) {
         if (slotToCard[slot] == null) return;
         try {

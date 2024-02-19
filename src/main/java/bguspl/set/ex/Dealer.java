@@ -1,8 +1,10 @@
 package bguspl.set.ex;
+
 import bguspl.set.Env;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Vector;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -38,6 +40,7 @@ public class Dealer implements Runnable {
      */
     private LinkedBlockingDeque<Integer> calls;
     private long starting_time;
+    static MySemaphore callsLock;
 
 
     public Dealer(Env env, Table table, Player[] players) {
@@ -46,6 +49,7 @@ public class Dealer implements Runnable {
         this.players = players;
         deck = IntStream.range(0, env.config.deckSize).boxed().collect(Collectors.toList());
         calls = new LinkedBlockingDeque<>();
+        callsLock = new MySemaphore();
     }
 
     /**
@@ -125,7 +129,11 @@ public class Dealer implements Runnable {
 
 
     public void callDealer(int id) {
-        if (!calls.contains(id)) calls.add(id);
+        if (!calls.contains(id)) {
+            callsLock.acquire(false);
+            calls.add(id);
+            callsLock.release();
+        }
     }
 
     /**
@@ -133,19 +141,22 @@ public class Dealer implements Runnable {
      */
     private void removeCardsFromTable() {
         if (calls.isEmpty()) return;
-        int playerId;
-        playerId = calls.remove();
+        callsLock.acquire(true);
+        int playerId = calls.remove();
+        callsLock.release();
         int[] set = table.getSetById(playerId);
-        table.resetTokensById(playerId);
-        if (env.util.testSet(set)) {
-            for (int i = 0; i < set.length; i++) {
-                removeCardAndNotify(table.cardToSlot[set[i]]); // was set[i]
-            }
-            placeCardsOnTable();
-            players[playerId].point();
-            table.hints(); /// to delete
-        } else
-            players[playerId].penalty();
+        synchronized (table) {
+            table.resetTokensById(playerId);
+            if (env.util.testSet(set)) {
+                for (int i = 0; i < set.length; i++) {
+                    removeCardAndNotify(table.cardToSlot[set[i]]); // was set[i]
+                }
+                placeCardsOnTable();
+                players[playerId].point();
+                table.hints(); /// to delete
+            } else
+                players[playerId].penalty();
+        }
     }
 
     /**
@@ -154,7 +165,6 @@ public class Dealer implements Runnable {
     private void placeCardsOnTable() {
         for (int i = 0; deck.size() > 0 && i < env.config.tableSize; i++) {
             if (table.isSlotEmpty(i)) {
-                int idx = (int) (Math.random() * deck.size());
                 table.placeCard(deck.remove(0), i);
             }
         }
