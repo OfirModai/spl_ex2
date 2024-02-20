@@ -92,8 +92,9 @@ public class Player implements Runnable {
         this.tokenCounter = new AtomicInteger(0);
         this.dealer = dealer;
         this.score = new AtomicInteger(0);
-        this.keysPressed = new LinkedBlockingDeque<>(env.config.featureCount);
+        this.keysPressed = new LinkedBlockingDeque<>(env.config.featureSize);
         this.dealerChecks = new AtomicBoolean(false);
+        if (!human) createArtificialIntelligence();
     }
 
     /**
@@ -130,14 +131,11 @@ public class Player implements Runnable {
             env.logger.info("generator_thread " + Thread.currentThread().getName() + " starting.");
             while (!terminate) {
                 int randomSlot = (int) (Math.random() * env.config.tableSize);
-                keyPressed(randomSlot);
-                /*try {
-                    synchronized (aiLock) {
-
-                        wait();
-                    }
+                try {
+                    Thread.sleep(1000);
                 } catch (InterruptedException ignored) {
-                }*/
+                }
+                keyPressed(randomSlot);
             }
             env.logger.info("thread " + Thread.currentThread().getName() + " terminated.");
         }, "computer-" + id);
@@ -168,8 +166,8 @@ public class Player implements Runnable {
 
             //calls dealer for set check
             if (tokenCounter.get() == 3) {
-                dealer.callDealer(id);
                 dealerChecks.compareAndSet(false, true);
+                dealer.callDealer(id);
                 keysPressed.clear();
                 tokenCounter.compareAndSet(3, 0);
                 synchronized (this) {
@@ -210,7 +208,7 @@ public class Player implements Runnable {
         toSleep = env.config.pointFreezeMillis;
         dealerChecks.compareAndSet(true, false);
         synchronized (this) {
-            this.notify();// only 1 thread is waiting
+            this.notifyAll();// only 1 thread is waiting
         }
     }
 
@@ -221,7 +219,7 @@ public class Player implements Runnable {
         toSleep = env.config.penaltyFreezeMillis;
         dealerChecks.compareAndSet(true, false);
         synchronized (this) {
-            this.notify(); // only 1 thread is waiting
+            this.notifyAll(); // only 1 thread is waiting
         }
     }
 
