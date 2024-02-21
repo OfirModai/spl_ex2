@@ -166,20 +166,16 @@ public class Dealer implements Runnable {
                 table.placeCard(deck.remove(0), i);
             }
         }
-        try {
-            Thread.sleep(1000);
-        } catch (InterruptedException ignored) {
-        }
     }
 
     private void removeCardAndNotify(int slot) {
+        //changed the order here - I don't know why but it fixed the 4 tokens problem
+        table.removeCard(slot);
         for (int i = 0; i < players.length; i++) {
             if (table.isTokenPlaced(i, slot)) {
                 players[i].decreaseTokenCounter();
             }
         }
-        table.removeCard(slot);
-
     }
 
     /**
@@ -192,7 +188,6 @@ public class Dealer implements Runnable {
             boolean warn = env.config.turnTimeoutMillis - env.config.turnTimeoutWarningMillis < last_updated_time - starting_time;
             if (warn) difference = 9 - (System.currentTimeMillis() - last_updated_time);
             else difference = 999 - (System.currentTimeMillis() - last_updated_time);
-
             if (difference < 0) difference = 0;
             try {
                 Thread.sleep(difference);
