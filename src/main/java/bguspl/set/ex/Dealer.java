@@ -166,6 +166,10 @@ public class Dealer implements Runnable {
                 table.placeCard(deck.remove(0), i);
             }
         }
+        try {
+            Thread.sleep(1000);
+        } catch (InterruptedException ignored) {
+        }
     }
 
     private void removeCardAndNotify(int slot) {
@@ -215,8 +219,12 @@ public class Dealer implements Runnable {
      * Returns all the cards from the table to the deck.
      */
     private void removeAllCardsFromTable() {
-        for (int i = 0; i < env.config.tableSize; i++) {
-            table.removeCard(i);
+        synchronized (table) { //ofir
+
+            for (int i = 0; i < env.config.tableSize; i++) {
+                //was : table.removeCard(i);
+                removeCardAndNotify(i);
+            }
         }
     }
 

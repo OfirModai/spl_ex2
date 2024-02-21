@@ -132,7 +132,7 @@ public class Player implements Runnable {
             while (!terminate) {
                 int randomSlot = (int) (Math.random() * env.config.tableSize);
                 try {
-                    Thread.sleep(1000);
+                    Thread.sleep(1);
                 } catch (InterruptedException ignored) {
                 }
                 keyPressed(randomSlot);
@@ -155,8 +155,8 @@ public class Player implements Runnable {
      * @param slot - the slot corresponding to the key pressed.
      */
     private void keyPressedFromPlayerThread(int slot) {
-        if (tokenCounter.get() == 3) //just for ourselves
-            throw new RuntimeException("It's a bug - too many tokens has been placed!");
+        if (tokenCounter.get() == 3 | dealerChecks.get()) //just for ourselves
+            throw new RuntimeException("It's a bug - too many tokens has been placed! or the dealer checks");
 
         if (table.isSlotEmpty(slot)) return;
 

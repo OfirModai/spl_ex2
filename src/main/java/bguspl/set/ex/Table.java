@@ -117,9 +117,13 @@ public class Table {
         env.ui.removeCard(slot);
         cardToSlot[slotToCard[slot]] = null;
         slotToCard[slot] = null;
-        for (int i = 0; i < tokens[0].length; i++) {
-            if (tokens[slot][i])
-                tokens[slot][i] = false;
+        // also changed the condition of the for loop a little bit to make it more straight-forward
+        for (int i = 0; i < env.config.players; i++) {
+            ///was:  like this: wrong way to remove token
+            /*if (tokens[slot][i])
+                tokens[slot][i] = false;*/
+            // correction:
+            removeToken(i,slot);
         }
     }
 
