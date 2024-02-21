@@ -173,7 +173,7 @@ public class Table {
     public synchronized List<Integer> getCards() {
         List<Integer> cardList = new LinkedList<>();
         for (Integer card : slotToCard) {
-            cardList.add(card);
+            if(card != null) cardList.add(card); // was without the checking and coused exeption to the util check
         }
         return cardList;
     }

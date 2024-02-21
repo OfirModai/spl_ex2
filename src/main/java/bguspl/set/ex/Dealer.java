@@ -35,12 +35,13 @@ public class Dealer implements Runnable {
     /**
      * The time when the dealer needs to reshuffle the deck due to turn timeout.
      */
-    private Queue<Integer> calls;
+    private volatile Queue<Integer> calls;
     private long starting_time;
     private long last_updated_time;
-    static MySemaphore callsLock;
-    Thread dealerThread;
+    private volatile MySemaphore callsLock;
+    private volatile Thread dealerThread;
 
+    private List<Thread> playersThreads;
 
     public Dealer(Env env, Table table, Player[] players) {
         this.env = env;
@@ -51,6 +52,7 @@ public class Dealer implements Runnable {
         callsLock = new MySemaphore();
         last_updated_time = 0; // we haven't updated yet, therefore it's 0
         dealerThread = null;
+        playersThreads = new LinkedList<>(); //new - save the threads to make sure they are terminated
     }
 
     /**
@@ -65,6 +67,7 @@ public class Dealer implements Runnable {
         for (int i = 0; i < players.length; i++) {
             Thread t = new Thread(players[i], "player " + i);
             t.start();
+            playersThreads.add(t);
         }
         while (!shouldFinish()) {
             timerLoop();
@@ -76,7 +79,15 @@ public class Dealer implements Runnable {
             }
         }
         terminate();
+        // new - make sure all threads finishes before the dealer
+        for(Thread t : playersThreads) {
+            try {
+                t.join();
+            } catch (InterruptedException ignored) {
+            }
+        }
         announceWinners();
+
         env.logger.info("thread " + Thread.currentThread().getName() + " terminated.");
     }
 
@@ -94,8 +105,12 @@ public class Dealer implements Runnable {
             removeCardsFromTable();
             placeCardsOnTable();
             timeout = System.currentTimeMillis() - starting_time > env.config.turnTimeoutMillis;
-            if (timeout & env.util.findSets(table.getCards(), 1).size() == 0)
-                keepPlaying = false;
+            try {
+                if (timeout & env.util.findSets(table.getCards(), 1).size() == 0) // this line is a problem
+                    keepPlaying = false;
+            }catch (Exception e) {
+                int i =0;
+            }
             if (timeout)
                 updateTimerDisplay(true);
         }

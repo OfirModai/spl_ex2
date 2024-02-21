@@ -114,10 +114,10 @@ public class Player implements Runnable {
             } catch (InterruptedException ignored) {
             }
         }
-        if (!human) try {
+        /*if (!human) try {
             aiThread.join();
         } catch (InterruptedException ignored) {
-        }
+        }*/
         env.logger.info("thread " + Thread.currentThread().getName() + " terminated.");
     }
 

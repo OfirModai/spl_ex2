@@ -1,6 +1,0 @@
-[23:22:12.857] [INFO   ] thread bguspl.set.Main.main() starting.
-[23:22:12.860] [SEVERE ] cannot read configuration file config.properties trying from resources.
-[23:22:12.861] [SEVERE ] configuration file was loaded from resources directory.
-[23:22:13.460] [INFO   ] thread dealer starting.
-[23:22:13.460] [INFO   ] thread dealer starting.
-[23:22:41.480] [SEVERE ] exit button pressed
