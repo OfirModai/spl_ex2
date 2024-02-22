@@ -197,6 +197,7 @@ public class Dealer implements Runnable {
             if (table.isTokenPlaced(i, slot)) {
                 if (calls.contains(i)) calls.remove(i); // ofir
                 players[i].oneTokenIsRemoved();
+                table.removeToken(i,slot);
                 // here we need to update the player that if he called the dealer, the call is canceled
             }
         }
