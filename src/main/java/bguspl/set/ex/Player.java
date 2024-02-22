@@ -131,10 +131,6 @@ public class Player implements Runnable {
             env.logger.info("generator_thread " + Thread.currentThread().getName() + " starting.");
             while (!terminate) {
                 int randomSlot = (int) (Math.random() * env.config.tableSize);
-                try {
-                    Thread.sleep(1);
-                } catch (InterruptedException ignored) {
-                }
                 keyPressed(randomSlot);
             }
             env.logger.info("thread " + Thread.currentThread().getName() + " terminated.");

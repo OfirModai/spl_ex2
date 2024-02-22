@@ -82,6 +82,7 @@ public class Dealer implements Runnable {
         // new - make sure all threads finishes before the dealer
         for(Thread t : playersThreads) {
             try {
+                t.interrupt(); // waking the player to terminate himself
                 t.join();
             } catch (InterruptedException ignored) {
             }
