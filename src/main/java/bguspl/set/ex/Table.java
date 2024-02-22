@@ -181,7 +181,6 @@ public class Table {
     public synchronized void resetTokensById(int playerId) {
         for (int i = 0; i < tokens.length; i++) {
             removeToken(playerId, i); // omer - table didn't remove the tokens from the cards
-            tokens[i][playerId] = false;
         }
     }
 

@@ -2,14 +2,9 @@ package bguspl.set.ex;
 
 import bguspl.set.Env;
 
-import java.sql.Time;
-import java.util.concurrent.BlockingDeque;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import static java.util.logging.Level.INFO;
 
 /**
  * This class manages the players' threads and data
@@ -62,7 +57,7 @@ public class Player implements Runnable {
     /**
      * counts the num of tokens that has been placed by the player
      */
-    private volatile AtomicInteger tokenCounter;
+    public volatile AtomicInteger tokenCounter; // ofir : changed here to public because dealer need to change it a lot
 
     /**
      * player needs to communicate with the dealer
@@ -110,7 +105,9 @@ public class Player implements Runnable {
             try {
                 Thread.sleep(toSleep);
                 toSleep = 0;
-                keyPressedFromPlayerThread(keysPressed.take());
+                Integer key = keysPressed.take();
+                if(!terminate) keyPressedFromPlayerThread(key); // added this condition for the situation of the end
+                // the thread wakes here and don't need to put the token
             } catch (InterruptedException ignored) {
             }
         }
@@ -165,7 +162,8 @@ public class Player implements Runnable {
                 dealerChecks.compareAndSet(false, true);
                 dealer.callDealer(id);
                 keysPressed.clear();
-                tokenCounter.compareAndSet(3, 0);
+                // was: tokenCounter.compareAndSet(3, 0);
+                // deleted cous we need the count if one is taken down
                 synchronized (this) {
                     try {
                         this.wait();
@@ -188,8 +186,9 @@ public class Player implements Runnable {
     }
 
 
-    public void decreaseTokenCounter() {
+    public void oneTokenIsRemoved() {
         tokenCounter.decrementAndGet();
+        if(dealerChecks.get()) dealerChecks.compareAndSet(true, false); // ofir
     }
 
     /**
@@ -204,7 +203,7 @@ public class Player implements Runnable {
         toSleep = env.config.pointFreezeMillis;
         dealerChecks.compareAndSet(true, false);
         synchronized (this) {
-            this.notifyAll();// only 1 thread is waiting
+            this.notifyAll();
         }
     }
 

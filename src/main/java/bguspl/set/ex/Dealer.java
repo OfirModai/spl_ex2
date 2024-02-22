@@ -158,9 +158,10 @@ public class Dealer implements Runnable {
         synchronized (table) {
             callsLock.acquire(true);
             int playerId = calls.remove();
-            callsLock.release();
+            //was here: callsLock.release();
             int[] set = table.getSetById(playerId);
             table.resetTokensById(playerId);
+            players[playerId].tokenCounter.compareAndSet(3,0);
             if (env.util.testSet(set)) {
                 for (int i = 0; i < set.length; i++) {
                     removeCardAndNotify(table.cardToSlot[set[i]]); // was set[i]
@@ -170,6 +171,7 @@ public class Dealer implements Runnable {
                 table.hints(); /// to delete
             } else
                 players[playerId].penalty();
+            callsLock.release(); //release only here for removing calls which had tokens that were won before them
         }
     }
 
@@ -184,12 +186,18 @@ public class Dealer implements Runnable {
         }
     }
 
+    /**
+     * assuming you already took calls lock
+     * @param slot
+     */
     private void removeCardAndNotify(int slot) {
         //changed the order here - I don't know why but it fixed the 4 tokens problem
         table.removeCard(slot);
         for (int i = 0; i < players.length; i++) {
             if (table.isTokenPlaced(i, slot)) {
-                players[i].decreaseTokenCounter();
+                if (calls.contains(i)) calls.remove(i); // ofir
+                players[i].oneTokenIsRemoved();
+                // here we need to update the player that if he called the dealer, the call is canceled
             }
         }
     }
@@ -231,11 +239,12 @@ public class Dealer implements Runnable {
      */
     private void removeAllCardsFromTable() {
         synchronized (table) { //ofir
-
+            callsLock.acquire(true);
             for (int i = 0; i < env.config.tableSize; i++) {
                 //was : table.removeCard(i);
                 removeCardAndNotify(i);
             }
+            callsLock.release();
         }
     }
 
