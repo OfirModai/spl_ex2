@@ -79,6 +79,8 @@ public class Dealer implements Runnable {
             }
         }
         terminate();
+        env.ui.removeTokens(); //ofir - make it look nicer in the end
+        env.logger.info("decksize: " + deck.size());
         // new - make sure all threads finishes before the dealer
         for(Thread t : playersThreads) {
             try {
@@ -95,7 +97,7 @@ public class Dealer implements Runnable {
     /**
      * The inner loop of the dealer thread that runs as long as the countdown did not time out.
      */
-    private void timerLoop() { // maybe we should consider small delay between checks! -omer
+    private void timerLoop() {
         starting_time = System.currentTimeMillis();
         boolean timeout;
         boolean keepPlaying = true;
@@ -143,8 +145,10 @@ public class Dealer implements Runnable {
 
     public void callDealer(int id) {
         if (!calls.contains(id)) {
+            //env.logger.info(Thread.currentThread().getName()+" request call");
             callsLock.acquire(false);
             calls.add(id);
+            //env.logger.info(Thread.currentThread().getName()+" call added");
             callsLock.release();
             dealerThread.interrupt();
         }
@@ -158,6 +162,7 @@ public class Dealer implements Runnable {
         synchronized (table) {
             callsLock.acquire(true);
             int playerId = calls.remove();
+            //env.logger.info("player "+playerId+" getting checked");
             //was here: callsLock.release();
             int[] set = table.getSetById(playerId);
             table.resetTokensById(playerId);

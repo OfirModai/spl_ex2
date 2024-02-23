@@ -106,6 +106,7 @@ public class Player implements Runnable {
                 Thread.sleep(toSleep);
                 toSleep = 0;
                 Integer key = keysPressed.take();
+                env.logger.info("player " + id + " took press");
                 if(!terminate) keyPressedFromPlayerThread(key); // added this condition for the situation of the end
                 // the thread wakes here and don't need to put the token
             } catch (InterruptedException ignored) {
@@ -128,6 +129,7 @@ public class Player implements Runnable {
             env.logger.info("generator_thread " + Thread.currentThread().getName() + " starting.");
             while (!terminate) {
                 int randomSlot = (int) (Math.random() * env.config.tableSize);
+                env.logger.info("player "+ id + " generated press");
                 keyPressed(randomSlot);
             }
             env.logger.info("thread " + Thread.currentThread().getName() + " terminated.");
@@ -179,8 +181,9 @@ public class Player implements Runnable {
 
     public void keyPressed(int slot) {
         try {
-            if (!dealerChecks.get())
-                keysPressed.put(slot);
+            if (dealerChecks.get()) Thread.currentThread().wait(); //ofir - the thread can use alot of valuable CPU time
+            // and therefore we have to make him blocked
+            else keysPressed.put(slot);
         } catch (InterruptedException ignored) {
         }
     }
@@ -188,7 +191,12 @@ public class Player implements Runnable {
 
     public void oneTokenIsRemoved() {
         tokenCounter.decrementAndGet();
-        if(dealerChecks.get()) dealerChecks.compareAndSet(true, false); // ofir
+        if(dealerChecks.get()){ // ofir - make the player know his call was canceled
+            dealerChecks.compareAndSet(true, false);
+            synchronized (this) {
+                this.notifyAll();
+            }
+        }
     }
 
     /**
@@ -212,9 +220,10 @@ public class Player implements Runnable {
      */
     public void penalty() {
         toSleep = env.config.penaltyFreezeMillis;
+        env.logger.info("player " + id + " got penalty");
         dealerChecks.compareAndSet(true, false);
         synchronized (this) {
-            this.notifyAll(); // only 1 thread is waiting
+            this.notifyAll();
         }
     }
 
