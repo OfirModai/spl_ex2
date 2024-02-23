@@ -107,7 +107,7 @@ public class Player implements Runnable {
                 toSleep = 0;
                 Integer key = keysPressed.take();
                 if(!terminate & toSleep==0) {
-                    env.logger.info("player " + id + " took press");
+                    //env.logger.info("player " + id + " took press");
                     keyPressedFromPlayerThread(key); // added this condition for the situation of the end
                     // the thread wakes here and don't need to put the token
                 }
@@ -117,6 +117,7 @@ public class Player implements Runnable {
             }
         }
         if (!human) try {
+            aiThread.interrupt();
             aiThread.join();
         } catch (InterruptedException ignored) {
         }
@@ -133,7 +134,7 @@ public class Player implements Runnable {
             env.logger.info("generator_thread " + Thread.currentThread().getName() + " starting.");
             while (!terminate) {
                 int randomSlot = (int) (Math.random() * env.config.tableSize);
-                env.logger.info("player "+ id + " generated press");
+                //env.logger.info("player "+ id + " generated press");
                 keyPressed(randomSlot);
             }
             env.logger.info("thread " + Thread.currentThread().getName() + " terminated.");
@@ -241,7 +242,7 @@ public class Player implements Runnable {
      */
     public void penalty() {
         toSleep = env.config.penaltyFreezeMillis;
-        env.logger.info("player " + id + " got penalty");
+        //env.logger.info("player " + id + " got penalty");
         dealerChecks.compareAndSet(true, false);
         playerThread.interrupt();
         if (aiThread != null) aiThread.interrupt();

@@ -49,7 +49,7 @@ public class Dealer implements Runnable {
         this.players = players;
         deck = IntStream.range(0, env.config.deckSize).boxed().collect(Collectors.toList());
         calls = new LinkedList<>();
-        callsLock = new MySemaphore();
+        callsLock = new MySemaphore(env);
         last_updated_time = 0; // we haven't updated yet, therefore it's 0
         dealerThread = null;
         playersThreads = new LinkedList<>(); //new - save the threads to make sure they are terminated
@@ -71,8 +71,8 @@ public class Dealer implements Runnable {
         }
         while (!shouldFinish()) {
             timerLoop();
+            removeAllCardsFromTable();
             synchronized (table) {
-                removeAllCardsFromTable();
                 deckShuffle();
                 updateTimerDisplay(true);
                 placeCardsOnTable();
@@ -141,6 +141,7 @@ public class Dealer implements Runnable {
 
 
     public void callDealer(int id) {
+        dealerThread.interrupt();
         callsLock.acquire(false);
         if (!calls.contains(id)) {
             //env.logger.info(Thread.currentThread().getName()+" request call");
@@ -148,15 +149,15 @@ public class Dealer implements Runnable {
             //env.logger.info(Thread.currentThread().getName()+" call added");
         }
         callsLock.release();
-        dealerThread.interrupt();
+
     }
 
     /**
      * Checks what cards should be removed from the table and removes them.
      */
     private void removeCardsFromTable() {
+        callsLock.acquire(true);
         synchronized (table) {
-            callsLock.acquire(true);
             if (calls.isEmpty()) return;
             int playerId = calls.remove();
             //env.logger.info("player "+playerId+" getting checked");
@@ -173,8 +174,8 @@ public class Dealer implements Runnable {
                 table.hints(); /// to delete
             } else
                 players[playerId].penalty();
-            callsLock.release(); //release only here for removing calls which had tokens that were won before them
         }
+        callsLock.release(); //release only here for removing calls which had tokens that were won before them
     }
 
     /**
@@ -194,24 +195,24 @@ public class Dealer implements Runnable {
      */
     private void removeCardAndNotify(int slot) {
         //changed the order here - I don't know why but it fixed the 4 tokens problem
-        table.removeCard(slot);
         for (int i = 0; i < players.length; i++) {
             if (table.isTokenPlaced(i, slot)) {
-                callsLock.acquire(true);
                 if (calls.contains(i)) calls.remove(i); // ofir
-                callsLock.release();
                 players[i].oneTokenIsRemoved();
                 table.removeToken(i,slot);
                 // here we need to update the player that if he called the dealer, the call is canceled
             }
         }
+        table.removeCard(slot);
     }
 
     /**
      * Sleep for a fixed amount of time or until the thread is awakened for some purpose.
      */
     private void sleepUntilWokenOrTimeout() {
+        callsLock.acquire(true);
         if (calls.isEmpty()) {
+            callsLock.release();
             //long difference = env.config.turnTimeoutMillis - (System.currentTimeMillis() - starting_time);
             long difference;
             boolean warn = env.config.turnTimeoutMillis - env.config.turnTimeoutWarningMillis < last_updated_time - starting_time;
@@ -222,6 +223,9 @@ public class Dealer implements Runnable {
                 Thread.sleep(difference);
             } catch (InterruptedException ignored) {
             }
+        }
+        else {
+            callsLock.release();
         }
     }
 
@@ -243,14 +247,15 @@ public class Dealer implements Runnable {
      * Returns all the cards from the table to the deck.
      */
     private void removeAllCardsFromTable() {
+        callsLock.acquire(true);
         synchronized (table) { //ofir
-            callsLock.acquire(true);
             for (int i = 0; i < env.config.tableSize; i++) {
                 //was : table.removeCard(i);
                 removeCardAndNotify(i);
             }
-            callsLock.release();
         }
+        callsLock.release();
+
     }
 
     /**
