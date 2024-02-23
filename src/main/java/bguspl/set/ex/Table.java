@@ -114,10 +114,6 @@ public class Table {
             Thread.sleep(env.config.tableDelayMillis);
         } catch (InterruptedException ignored) {
         }
-        env.ui.removeCard(slot);
-        cardToSlot[slotToCard[slot]] = null;
-        slotToCard[slot] = null;
-        // also changed the condition of the for loop a little bit to make it more straight-forward
         for (int i = 0; i < env.config.players; i++) {
             ///was:  like this: wrong way to remove token
             /*if (tokens[slot][i])
@@ -125,6 +121,10 @@ public class Table {
             // correction:
             removeToken(i,slot);
         }
+        cardToSlot[slotToCard[slot]] = null;
+        slotToCard[slot] = null;
+        env.ui.removeCard(slot);
+
     }
 
     /**
@@ -161,7 +161,7 @@ public class Table {
     }
 
     public synchronized int[] getSetById(int id) {
-        int[] set = new int[env.config.featureSize]; //omer change - from: featureCount -> to featureSize
+        int[] set = new int[env.config.featureSize];
         int indx = 0;
         for (int i = 0; i < tokens.length; i++) {
             if (tokens[i][id])

@@ -106,16 +106,20 @@ public class Player implements Runnable {
                 Thread.sleep(toSleep);
                 toSleep = 0;
                 Integer key = keysPressed.take();
-                env.logger.info("player " + id + " took press");
-                if(!terminate) keyPressedFromPlayerThread(key); // added this condition for the situation of the end
-                // the thread wakes here and don't need to put the token
-            } catch (InterruptedException ignored) {
+                if(!terminate & toSleep==0) {
+                    env.logger.info("player " + id + " took press");
+                    keyPressedFromPlayerThread(key); // added this condition for the situation of the end
+                    // the thread wakes here and don't need to put the token
+                }
+            }
+            catch (InterruptedException ignored) {
+                int i=0;
             }
         }
-        /*if (!human) try {
+        if (!human) try {
             aiThread.join();
         } catch (InterruptedException ignored) {
-        }*/
+        }
         env.logger.info("thread " + Thread.currentThread().getName() + " terminated.");
     }
 
@@ -153,39 +157,52 @@ public class Player implements Runnable {
         if (tokenCounter.get() == 3 | dealerChecks.get()) //just for ourselves
             throw new RuntimeException("It's a bug - too many tokens has been placed! or the dealer checks");
 
-        if (table.isSlotEmpty(slot)) return;
 
-        if (!table.isTokenPlaced(id, slot)) {
-            table.placeToken(id, slot);
-            tokenCounter.incrementAndGet();
-
-            //calls dealer for set check
-            if (tokenCounter.get() == 3) {
-                dealerChecks.compareAndSet(false, true);
-                dealer.callDealer(id);
-                keysPressed.clear();
-                // was: tokenCounter.compareAndSet(3, 0);
-                // deleted cous we need the count if one is taken down
-                synchronized (this) {
-                    try {
-                        this.wait();
-                    } catch (InterruptedException ignored) {
-                    }
+        // ofir - changed the order and hirarchy to make sure token is placed only when the square has card
+        // before, the card may be taken between the check and the actuall placement of the token
+        synchronized (table){
+            if (table.isSlotEmpty(slot)) return;
+            if (!table.isTokenPlaced(id, slot)) {
+                table.placeToken(id, slot);
+                tokenCounter.incrementAndGet();
+            }
+            else {
+                table.removeToken(id, slot);
+                tokenCounter.decrementAndGet();
+            }
+        }
+        //calls dealer for set check
+        if (tokenCounter.get() == 3) {
+            dealerChecks.compareAndSet(false, true);
+            dealer.callDealer(id);
+            keysPressed.clear();
+            // was: tokenCounter.compareAndSet(3, 0);
+            // deleted cous we need the count if one is taken down
+            synchronized (this) {
+                try {
+                    this.wait();
+                } catch (InterruptedException ignored) {
                 }
             }
-        } else {
-            table.removeToken(id, slot);
-            tokenCounter.decrementAndGet();
         }
     }
 
     public void keyPressed(int slot) {
-        try {
-            if (dealerChecks.get()) Thread.currentThread().wait(); //ofir - the thread can use alot of valuable CPU time
-            // and therefore we have to make him blocked
-            else keysPressed.put(slot);
-        } catch (InterruptedException ignored) {
+        if (dealerChecks.get()) { //ofir - the thread can use alot of valuable CPU time and therefore we have to make him blocked
+            synchronized (this) {
+                try {
+                    this.wait();
+                }
+                catch (InterruptedException ignored){}
+            }
         }
+        else {
+            try {
+                keysPressed.put(slot);
+            }
+            catch (InterruptedException ignore){}
+        }
+
     }
 
 
@@ -193,6 +210,8 @@ public class Player implements Runnable {
         tokenCounter.decrementAndGet();
         if(dealerChecks.get()){ // ofir - make the player know his call was canceled
             dealerChecks.compareAndSet(true, false);
+            playerThread.interrupt();
+            if (aiThread != null) aiThread.interrupt();
             synchronized (this) {
                 this.notifyAll();
             }
@@ -210,6 +229,8 @@ public class Player implements Runnable {
         env.ui.setScore(id, score.incrementAndGet());
         toSleep = env.config.pointFreezeMillis;
         dealerChecks.compareAndSet(true, false);
+        playerThread.interrupt();
+        if (aiThread != null) aiThread.interrupt();
         synchronized (this) {
             this.notifyAll();
         }
@@ -222,6 +243,8 @@ public class Player implements Runnable {
         toSleep = env.config.penaltyFreezeMillis;
         env.logger.info("player " + id + " got penalty");
         dealerChecks.compareAndSet(true, false);
+        playerThread.interrupt();
+        if (aiThread != null) aiThread.interrupt();
         synchronized (this) {
             this.notifyAll();
         }

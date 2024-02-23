@@ -108,12 +108,9 @@ public class Dealer implements Runnable {
             removeCardsFromTable();
             placeCardsOnTable();
             timeout = System.currentTimeMillis() - starting_time > env.config.turnTimeoutMillis;
-            try {
-                if (timeout & env.util.findSets(table.getCards(), 1).size() == 0) // this line is a problem
-                    keepPlaying = false;
-            }catch (Exception e) {
-                int i =0;
-            }
+            if (timeout & env.util.findSets(table.getCards(), 1).size() == 0)
+                keepPlaying = false;
+
             if (timeout)
                 updateTimerDisplay(true);
         }
@@ -144,23 +141,23 @@ public class Dealer implements Runnable {
 
 
     public void callDealer(int id) {
+        callsLock.acquire(false);
         if (!calls.contains(id)) {
             //env.logger.info(Thread.currentThread().getName()+" request call");
-            callsLock.acquire(false);
             calls.add(id);
             //env.logger.info(Thread.currentThread().getName()+" call added");
-            callsLock.release();
-            dealerThread.interrupt();
         }
+        callsLock.release();
+        dealerThread.interrupt();
     }
 
     /**
      * Checks what cards should be removed from the table and removes them.
      */
     private void removeCardsFromTable() {
-        if (calls.isEmpty()) return;
         synchronized (table) {
             callsLock.acquire(true);
+            if (calls.isEmpty()) return;
             int playerId = calls.remove();
             //env.logger.info("player "+playerId+" getting checked");
             //was here: callsLock.release();
@@ -200,7 +197,9 @@ public class Dealer implements Runnable {
         table.removeCard(slot);
         for (int i = 0; i < players.length; i++) {
             if (table.isTokenPlaced(i, slot)) {
+                callsLock.acquire(true);
                 if (calls.contains(i)) calls.remove(i); // ofir
+                callsLock.release();
                 players[i].oneTokenIsRemoved();
                 table.removeToken(i,slot);
                 // here we need to update the player that if he called the dealer, the call is canceled
