@@ -24,6 +24,7 @@ public class MySemaphore {
     }*/
 
     public synchronized void acquire(boolean isDealer) {
+        env.logger.info(Thread.currentThread().getName() + " waiting for lock");
         if (isDealer)
             threadQueue.add(0, Thread.currentThread());
         else threadQueue.addLast(Thread.currentThread());

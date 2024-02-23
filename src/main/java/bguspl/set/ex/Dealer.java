@@ -158,11 +158,16 @@ public class Dealer implements Runnable {
     private void removeCardsFromTable() {
         callsLock.acquire(true);
         synchronized (table) {
-            if (calls.isEmpty()) return;
+            env.logger.info("entered table");
+            if (calls.isEmpty()) {
+                callsLock.release();
+                return;
+            }
             int playerId = calls.remove();
             //env.logger.info("player "+playerId+" getting checked");
             //was here: callsLock.release();
             int[] set = table.getSetById(playerId);
+            env.logger.info("some point");
             table.resetTokensById(playerId);
             players[playerId].tokenCounter.compareAndSet(3,0);
             if (env.util.testSet(set)) {
