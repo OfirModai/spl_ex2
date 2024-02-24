@@ -12,17 +12,22 @@ with a short description of:
 
 1. Fully supporting all configuration fields and avoiding the use of magic numbers
 
-We are not entitled to this bonus.
-
-    1 - we haven't used any numbers in our code except 0 for nothing, 1 for one less(nothing to do with the rules), and 2
-    for calculate average.
-    2 - kind of anywhere, all the properties of the game where taken from the config file
+    1 - we haven't used any numbers in our code except 0 for nothing, 1 for one less(nothing to do with the rules),
+        and 2 for calculating average ( "roundToSecondsIntuitively" - Function ).
+    2 - In most of the functions, all the properties of the game were taken from the config file.
+    3 - Not to be tested.
 
 2. Terminating all threads (that you created) gracefully and in reverse order to the order they were created in.
 
-We are not entitled to this bonus.
-
-
+    1 - DealerThread - first to been created, and the last to get terminated at the end of Dealer run function.
+        PlayerThreads - we made every playerThread to be created -> started only after the previous playerThread
+        (and his aiThread - if !human) started, using busyWait (the game has not been started yet, therefore - no harm
+        has been caused to the liveliness of the game).
+        We ran over the playerThread and terminated them in reverse order of their creation (We waited in playerThread until
+        the threads has been terminated - and not only flagged as being terminated).
+        For !human players, waited until the belongings aiThreads has been terminated before terminating the playerThreads.
+    2 - Run and Terminate methods of players and dealer.
+    3 - Using logs - we printed suitable msg for starting and terminating threads.
 
 3. Handling the config.turnTimeoutMillis value as follows:
 config.turnTimeoutMillis < 0: display nothing.
@@ -37,4 +42,20 @@ We are not entitled to this bonus.
 changed on the display, key input needs to be handled, etc.) and the only threads created by you are:
 1 thread per player + 1 additional thread for non-human players.
 
-We are not entitled to this bonus.
+    1 - We created 1 thread per player (+1 for !human).
+        dealerThread - the dealer sleeps until he has been called by a player to check a set, or the sleeping period has been passed.
+        sleeping period: the time left from current time until the sec should be updated - 1milliSec.
+        playerThread - waits until a key has been pressed or generated, and when the dealer is checking the set he made.
+                       sleeps the suitable amount of time after the dealer finish the check (score / penalty).
+        aiThread - waits during the dealer checks.
+                   sleeps the suitable amount of time after the dealer finish the check (score / penalty).
+    2 - dealerThread - sleepUntilWokenOrTimeout, callDealer Functions.
+                       waits after unsuccessful callsLock. acquire, wakes by other threads release.
+                       (has a priority over the other threads).
+        playerThread - waits by keysPressed (blockingDeque) when no keys have been pressed / generated in run method,
+                       and in keyPressedFromPlayerThread function.
+                       sleeps according to score / penalty in the run method.
+        aiThread -  waits when keysPressed (blockingDeque) is full in keyPressed function.
+                    sleeps when penalty / score in run method -> createArtificialIntelligence function.
+    3 - Using logs - we printed suitable msg for waiting / sleeping and waking.
+

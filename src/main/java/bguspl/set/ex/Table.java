@@ -115,10 +115,6 @@ public class Table {
         } catch (InterruptedException ignored) {
         }
         for (int i = 0; i < env.config.players; i++) {
-            ///was:  like this: wrong way to remove token
-            /*if (tokens[slot][i])
-                tokens[slot][i] = false;*/
-            // correction:
             removeToken(i,slot);
         }
         cardToSlot[slotToCard[slot]] = null;
@@ -172,15 +168,14 @@ public class Table {
 
     public synchronized List<Integer> getCards() {
         List<Integer> cardList = new LinkedList<>();
-        for (Integer card : slotToCard) {
-            if(card != null) cardList.add(card); // was without the checking and coused exeption to the util check
-        }
+        for (Integer card : slotToCard)
+            if(card != null) cardList.add(card);
         return cardList;
     }
 
     public synchronized void resetTokensById(int playerId) {
         for (int i = 0; i < tokens.length; i++) {
-            removeToken(playerId, i); // omer - table didn't remove the tokens from the cards
+            removeToken(playerId, i);
         }
     }
 

@@ -4,12 +4,12 @@ import bguspl.set.Env;
 
 import java.util.LinkedList;
 
-public class MySemaphore {
+public class DealerFirstFairSemaphore {
     private LinkedList<Thread> threadQueue;
     private boolean free;
     private final Env env;;
 
-    MySemaphore(Env env) {
+    DealerFirstFairSemaphore(Env env) {
         free = true;
         threadQueue = new LinkedList<>();
         this.env = env;

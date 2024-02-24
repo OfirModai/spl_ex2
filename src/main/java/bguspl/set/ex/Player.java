@@ -57,7 +57,7 @@ public class Player implements Runnable {
     /**
      * counts the num of tokens that has been placed by the player
      */
-    public volatile AtomicInteger tokenCounter; // ofir : changed here to public because dealer need to change it a lot
+    public volatile AtomicInteger tokenCounter;
 
     /**
      * player needs to communicate with the dealer
@@ -68,7 +68,11 @@ public class Player implements Runnable {
 
     private volatile AtomicBoolean dealerChecks;
 
-    private volatile long toSleep;
+    private volatile long playerToSleep;
+    private volatile long aiToSleep;
+
+    public volatile boolean playerStarted;
+    private volatile boolean aiStarted;
 
     /**
      * The class constructor.
@@ -89,6 +93,9 @@ public class Player implements Runnable {
         this.score = new AtomicInteger(0);
         this.keysPressed = new LinkedBlockingDeque<>(env.config.featureSize);
         this.dealerChecks = new AtomicBoolean(false);
+        this.playerStarted = false;
+        this.aiStarted = false;
+
     }
 
     /**
@@ -99,23 +106,27 @@ public class Player implements Runnable {
         playerThread = Thread.currentThread();
         env.logger.info("thread " + Thread.currentThread().getName() + " starting.");
         if (!human) createArtificialIntelligence();
-
+        playerStarted = true;
+        // wait for everyone to start
+        synchronized (table) {}
         while (!terminate) {
             try {
-                Thread.sleep(toSleep);
-                toSleep = 0;
+                Thread.sleep(playerToSleep);
+                playerToSleep = 0;
                 Integer key = keysPressed.take();
-                if(!terminate & toSleep==0) { // added this condition for the situation of the end
+                if (!terminate & playerToSleep == 0) { // added this condition for the situation of the end
                     //env.logger.info("player " + id + " took press");
                     keyPressedFromPlayerThread(key);
                     // the thread wakes here and don't need to put the token
                 }
+            } catch (InterruptedException ignored) {
+                playerToSleep = 0;
             }
-            catch (InterruptedException ignored) {
-            }
+
         }
-        if (!human){
+        if (!human) {
             boolean killed = false;
+            // mechanism to kill aiThreads before the belonging playerThreads
             do {
                 try {
                     killed = true;
@@ -124,7 +135,7 @@ public class Player implements Runnable {
                 } catch (InterruptedException exception) {
                     killed = false;
                 }
-            } while (killed=false);
+            } while (!killed);
         }
         env.logger.info("thread " + Thread.currentThread().getName() + " terminated.");
     }
@@ -137,7 +148,14 @@ public class Player implements Runnable {
         // note: this is a very, very smart AI (!)
         aiThread = new Thread(() -> {
             env.logger.info("generator_thread " + Thread.currentThread().getName() + " starting.");
+            aiStarted = true;
             while (!terminate) {
+                try {
+                    Thread.sleep(aiToSleep);
+                    aiToSleep = 0;
+                } catch (InterruptedException ignored) {
+                    aiToSleep = 0;
+                }
                 int randomSlot = (int) (Math.random() * env.config.tableSize);
                 //env.logger.info("player "+ id + " generated press");
                 keyPressed(randomSlot);
@@ -145,6 +163,7 @@ public class Player implements Runnable {
             env.logger.info("thread " + Thread.currentThread().getName() + " terminated.");
         }, "computer-" + id);
         aiThread.start();
+        while (!aiStarted);
     }
 
     /**
@@ -158,9 +177,10 @@ public class Player implements Runnable {
             try {
                 playerThread.interrupt();
                 playerThread.join();
+            } catch (InterruptedException exception) {
+                killed = false;
             }
-            catch (InterruptedException exception){killed = false;}
-        }while (killed == false);
+        } while (!killed);
     }
 
     /**
@@ -172,16 +192,12 @@ public class Player implements Runnable {
         if (tokenCounter.get() == env.config.featureSize | dealerChecks.get()) //just for ourselves
             throw new RuntimeException("It's a bug - too many tokens has been placed! or the dealer checks");
 
-
-        // ofir - changed the order and hirarchy to make sure token is placed only when the square has card
-        // before, the card may be taken between the check and the actuall placement of the token
-        synchronized (table){
+        synchronized (table) {
             if (table.isSlotEmpty(slot)) return;
             if (!table.isTokenPlaced(id, slot)) {
                 table.placeToken(id, slot);
                 tokenCounter.incrementAndGet();
-            }
-            else {
+            } else {
                 table.removeToken(id, slot);
                 tokenCounter.decrementAndGet();
             }
@@ -192,7 +208,7 @@ public class Player implements Runnable {
             dealer.callDealer(id);
             keysPressed.clear();
             // was: tokenCounter.compareAndSet(3, 0);
-            // deleted cous we need the count if one is taken down
+            // deleted caused we need the count if one is taken down
             synchronized (this) {
                 try {
                     this.wait();
@@ -203,19 +219,18 @@ public class Player implements Runnable {
     }
 
     public void keyPressed(int slot) {
-        if (dealerChecks.get()) { //ofir - the thread can use alot of valuable CPU time and therefore we have to make him blocked
+        if (dealerChecks.get()) {
             synchronized (this) {
                 try {
                     this.wait();
+                } catch (InterruptedException ignored) {
                 }
-                catch (InterruptedException ignored){}
             }
-        }
-        else {
+        } else {
             try {
                 keysPressed.put(slot);
+            } catch (InterruptedException ignore) {
             }
-            catch (InterruptedException ignore){}
         }
 
     }
@@ -223,7 +238,7 @@ public class Player implements Runnable {
 
     public void oneTokenIsRemoved() {
         tokenCounter.decrementAndGet();
-        if(dealerChecks.get()){ // ofir - make the player know his call was canceled
+        if (dealerChecks.get()) { // ofir - make the player know his call was canceled
             dealerChecks.compareAndSet(true, false);
             playerThread.interrupt();
             if (aiThread != null) aiThread.interrupt();
@@ -242,7 +257,8 @@ public class Player implements Runnable {
     public void point() {
         int ignored = table.countCards(); // this part is just for demonstration in the unit tests
         env.ui.setScore(id, score.incrementAndGet());
-        toSleep = env.config.pointFreezeMillis;
+        playerToSleep = env.config.pointFreezeMillis;
+        aiToSleep = env.config.pointFreezeMillis;
         dealerChecks.compareAndSet(true, false);
         playerThread.interrupt();
         if (aiThread != null) aiThread.interrupt();
@@ -255,7 +271,8 @@ public class Player implements Runnable {
      * Penalize a player and perform other related actions.
      */
     public void penalty() {
-        toSleep = env.config.penaltyFreezeMillis;
+        playerToSleep = env.config.penaltyFreezeMillis;
+        aiToSleep = env.config.penaltyFreezeMillis;
         //env.logger.info("player " + id + " got penalty");
         dealerChecks.compareAndSet(true, false);
         playerThread.interrupt();
