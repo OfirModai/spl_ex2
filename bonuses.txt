@@ -14,13 +14,15 @@ with a short description of:
 
 We are not entitled to this bonus.
 
---------------------
+    1 - we haven't used any numbers in our code except 0 for nothing, 1 for one less(nothing to do with the rules), and 2
+    for calculate average.
+    2 - kind of anywhere, all the properties of the game where taken from the config file
 
 2. Terminating all threads (that you created) gracefully and in reverse order to the order they were created in.
 
 We are not entitled to this bonus.
 
---------------------
+
 
 3. Handling the config.turnTimeoutMillis value as follows:
 config.turnTimeoutMillis < 0: display nothing.

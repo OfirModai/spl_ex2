@@ -89,7 +89,6 @@ public class Player implements Runnable {
         this.score = new AtomicInteger(0);
         this.keysPressed = new LinkedBlockingDeque<>(env.config.featureSize);
         this.dealerChecks = new AtomicBoolean(false);
-        if (!human) createArtificialIntelligence();
     }
 
     /**
@@ -106,20 +105,26 @@ public class Player implements Runnable {
                 Thread.sleep(toSleep);
                 toSleep = 0;
                 Integer key = keysPressed.take();
-                if(!terminate & toSleep==0) {
+                if(!terminate & toSleep==0) { // added this condition for the situation of the end
                     //env.logger.info("player " + id + " took press");
-                    keyPressedFromPlayerThread(key); // added this condition for the situation of the end
+                    keyPressedFromPlayerThread(key);
                     // the thread wakes here and don't need to put the token
                 }
             }
             catch (InterruptedException ignored) {
-                int i=0;
             }
         }
-        if (!human) try {
-            aiThread.interrupt();
-            aiThread.join();
-        } catch (InterruptedException ignored) {
+        if (!human){
+            boolean killed = false;
+            do {
+                try {
+                    killed = true;
+                    aiThread.interrupt();
+                    aiThread.join();
+                } catch (InterruptedException exception) {
+                    killed = false;
+                }
+            } while (killed=false);
         }
         env.logger.info("thread " + Thread.currentThread().getName() + " terminated.");
     }
@@ -147,6 +152,15 @@ public class Player implements Runnable {
      */
     public void terminate() {
         terminate = true;
+        boolean killed = false;
+        do {
+            killed = true;
+            try {
+                playerThread.interrupt();
+                playerThread.join();
+            }
+            catch (InterruptedException exception){killed = false;}
+        }while (killed == false);
     }
 
     /**
@@ -155,7 +169,7 @@ public class Player implements Runnable {
      * @param slot - the slot corresponding to the key pressed.
      */
     private void keyPressedFromPlayerThread(int slot) {
-        if (tokenCounter.get() == 3 | dealerChecks.get()) //just for ourselves
+        if (tokenCounter.get() == env.config.featureSize | dealerChecks.get()) //just for ourselves
             throw new RuntimeException("It's a bug - too many tokens has been placed! or the dealer checks");
 
 
@@ -173,7 +187,7 @@ public class Player implements Runnable {
             }
         }
         //calls dealer for set check
-        if (tokenCounter.get() == 3) {
+        if (tokenCounter.get() == env.config.featureSize) {
             dealerChecks.compareAndSet(false, true);
             dealer.callDealer(id);
             keysPressed.clear();
