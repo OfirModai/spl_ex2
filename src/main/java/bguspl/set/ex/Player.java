@@ -120,7 +120,6 @@ public class Player implements Runnable {
                     // the thread wakes here and don't need to put the token
                 }
             } catch (InterruptedException ignored) {
-                playerToSleep = 0;
             }
 
         }
@@ -154,7 +153,6 @@ public class Player implements Runnable {
                     Thread.sleep(aiToSleep);
                     aiToSleep = 0;
                 } catch (InterruptedException ignored) {
-                    aiToSleep = 0;
                 }
                 int randomSlot = (int) (Math.random() * env.config.tableSize);
                 //env.logger.info("player "+ id + " generated press");
