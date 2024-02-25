@@ -24,7 +24,7 @@ public class DealerFirstFairSemaphore {
     }*/
 
     public synchronized void acquire(boolean isDealer) {
-        env.logger.info(Thread.currentThread().getName() + " waiting for lock");
+        //env.logger.info(Thread.currentThread().getName() + " waiting for lock");
         if (isDealer)
             threadQueue.add(0, Thread.currentThread());
         else threadQueue.addLast(Thread.currentThread());
@@ -34,14 +34,14 @@ public class DealerFirstFairSemaphore {
             } catch (InterruptedException ignored) {
             }
         }
-        env.logger.info(Thread.currentThread().getName() + " took lock");
+        //env.logger.info(Thread.currentThread().getName() + " took lock");
         free = false;
         threadQueue.remove(0);
     }
 
     public synchronized void release() {
         free = true;
-        env.logger.info(Thread.currentThread().getName() + " released lock");
+        //env.logger.info(Thread.currentThread().getName() + " released lock");
         notifyAll();
     }
 }
