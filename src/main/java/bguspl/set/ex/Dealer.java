@@ -136,9 +136,7 @@ public class Dealer implements Runnable {
         dealerThread.interrupt();
         callsLock.acquire(false);
         if (!calls.contains(id)) {
-            //env.logger.info(Thread.currentThread().getName()+" request call");
             calls.add(id);
-            //env.logger.info(Thread.currentThread().getName()+" call added");
         }
         callsLock.release();
 
@@ -233,8 +231,7 @@ public class Dealer implements Runnable {
             env.ui.setCountdown(env.config.turnTimeoutMillis, false);
             starting_time = last_updated_time;
         } else {
-            // changed here the code to be more straight forward and print the maximum time + making it more
-            // appealing to humans
+            //made the round to make it more appealing to humans
             long current_time_left = env.config.turnTimeoutMillis - (last_updated_time - starting_time);
             boolean warn = false;
             if (current_time_left < env.config.turnTimeoutWarningMillis) warn = true;

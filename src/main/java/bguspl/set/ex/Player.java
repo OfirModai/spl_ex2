@@ -205,8 +205,6 @@ public class Player implements Runnable {
             dealerChecks.compareAndSet(false, true);
             dealer.callDealer(id);
             keysPressed.clear();
-            // was: tokenCounter.compareAndSet(3, 0);
-            // deleted caused we need the count if one is taken down
             synchronized (this) {
                 try {
                     this.wait();
@@ -280,7 +278,7 @@ public class Player implements Runnable {
         }
     }
 
-    public int score() { // not synchronized by purpose: will return the right score for the very second it was called.
+    public int score() {
         return score.get();
     }
 }

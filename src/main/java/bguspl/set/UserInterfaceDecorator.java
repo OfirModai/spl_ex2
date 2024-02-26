@@ -28,14 +28,14 @@ public class UserInterfaceDecorator implements UserInterface {
 
     @Override
     public void removeCard(int slot) {
-        //logger.severe("removing card from slot " + slot);
+        logger.severe("removing card from slot " + slot);
         util.spin();
         if (ui != null) ui.removeCard(slot);
     }
 
     @Override
     public void placeToken(int player, int slot) {
-        //logger.severe("player " + (player + 1) + " placing token on slot " + slot);
+        logger.severe("player " + (player + 1) + " placing token on slot " + slot);
         util.spin();
         if (ui != null) ui.placeToken(player, slot);
     }
@@ -56,7 +56,7 @@ public class UserInterfaceDecorator implements UserInterface {
 
     @Override
     public void removeToken(int player, int slot) {
-        //logger.severe("removing player " + (player + 1) + " token from slot " + slot);
+        logger.severe("removing player " + (player + 1) + " token from slot " + slot);
         util.spin();
         if (ui != null) ui.removeToken(player, slot);
     }
