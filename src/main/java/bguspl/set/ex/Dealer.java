@@ -156,21 +156,19 @@ public class Dealer implements Runnable {
             }
             int playerId = calls.remove();
             //env.logger.info("player "+playerId+" getting checked");
-            //was here: callsLock.release();
             int[] set = table.getSetById(playerId);
             table.resetTokensById(playerId);
             players[playerId].tokenCounter.compareAndSet(env.config.featureSize, 0);
             if (env.util.testSet(set)) {
                 for (int i = 0; i < set.length; i++) {
-                    removeCardAndNotify(table.cardToSlot[set[i]]); // was set[i]
+                    removeCardAndNotify(table.cardToSlot[set[i]]); 
                 }
                 placeCardsOnTable();
                 players[playerId].point();
-                table.hints(); /// to delete
             } else
                 players[playerId].penalty();
         }
-        callsLock.release(); //release only here for removing calls which had tokens that were won before them
+        callsLock.release();
     }
 
     /**

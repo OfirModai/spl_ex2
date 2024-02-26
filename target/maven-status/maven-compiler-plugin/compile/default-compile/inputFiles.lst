@@ -1,15 +1,15 @@
-C:\Users\Ofir Modei\IdeaProjects\spl_ex2\src\main\java\bguspl\set\WindowManager.java
-C:\Users\Ofir Modei\IdeaProjects\spl_ex2\src\main\java\bguspl\set\UserInterfaceSwing.java
-C:\Users\Ofir Modei\IdeaProjects\spl_ex2\src\main\java\bguspl\set\ex\DealerFirstFairSemaphore.java
-C:\Users\Ofir Modei\IdeaProjects\spl_ex2\src\main\java\bguspl\set\UtilImpl.java
-C:\Users\Ofir Modei\IdeaProjects\spl_ex2\src\main\java\bguspl\set\ex\Dealer.java
-C:\Users\Ofir Modei\IdeaProjects\spl_ex2\src\main\java\bguspl\set\Util.java
-C:\Users\Ofir Modei\IdeaProjects\spl_ex2\src\main\java\bguspl\set\Env.java
-C:\Users\Ofir Modei\IdeaProjects\spl_ex2\src\main\java\bguspl\set\ex\Table.java
-C:\Users\Ofir Modei\IdeaProjects\spl_ex2\src\main\java\bguspl\set\ThreadLogger.java
-C:\Users\Ofir Modei\IdeaProjects\spl_ex2\src\main\java\bguspl\set\UserInterface.java
-C:\Users\Ofir Modei\IdeaProjects\spl_ex2\src\main\java\bguspl\set\Config.java
-C:\Users\Ofir Modei\IdeaProjects\spl_ex2\src\main\java\bguspl\set\ex\Player.java
-C:\Users\Ofir Modei\IdeaProjects\spl_ex2\src\main\java\bguspl\set\UserInterfaceDecorator.java
-C:\Users\Ofir Modei\IdeaProjects\spl_ex2\src\main\java\bguspl\set\InputManager.java
-C:\Users\Ofir Modei\IdeaProjects\spl_ex2\src\main\java\bguspl\set\Main.java
+/home/users/bsc/modai/Documents/spl_ex2/src/main/java/bguspl/set/Env.java
+/home/users/bsc/modai/Documents/spl_ex2/src/main/java/bguspl/set/UtilImpl.java
+/home/users/bsc/modai/Documents/spl_ex2/src/main/java/bguspl/set/ex/DealerFirstFairSemaphore.java
+/home/users/bsc/modai/Documents/spl_ex2/src/main/java/bguspl/set/Main.java
+/home/users/bsc/modai/Documents/spl_ex2/src/main/java/bguspl/set/ex/Table.java
+/home/users/bsc/modai/Documents/spl_ex2/src/main/java/bguspl/set/UserInterface.java
+/home/users/bsc/modai/Documents/spl_ex2/src/main/java/bguspl/set/WindowManager.java
+/home/users/bsc/modai/Documents/spl_ex2/src/main/java/bguspl/set/Util.java
+/home/users/bsc/modai/Documents/spl_ex2/src/main/java/bguspl/set/Config.java
+/home/users/bsc/modai/Documents/spl_ex2/src/main/java/bguspl/set/UserInterfaceSwing.java
+/home/users/bsc/modai/Documents/spl_ex2/src/main/java/bguspl/set/ThreadLogger.java
+/home/users/bsc/modai/Documents/spl_ex2/src/main/java/bguspl/set/UserInterfaceDecorator.java
+/home/users/bsc/modai/Documents/spl_ex2/src/main/java/bguspl/set/InputManager.java
+/home/users/bsc/modai/Documents/spl_ex2/src/main/java/bguspl/set/ex/Player.java
+/home/users/bsc/modai/Documents/spl_ex2/src/main/java/bguspl/set/ex/Dealer.java
