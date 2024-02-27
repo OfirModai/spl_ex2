@@ -215,6 +215,10 @@ public class Player implements Runnable {
     }
 
     public void keyPressed(int slot) {
+        if(human) { //we don't want to make the input thread sleep because it's the thread of all the ui
+            keysPressed.offerLast(slot);
+            return;
+        }
         if (dealerChecks.get()) {
             synchronized (this) {
                 try {

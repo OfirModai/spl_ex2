@@ -233,8 +233,9 @@ public class Dealer implements Runnable {
         } else {
             //made the round to make it more appealing to humans
             long current_time_left = env.config.turnTimeoutMillis - (last_updated_time - starting_time);
+            if (current_time_left<0) current_time_left = 0;
             boolean warn = false;
-            if (current_time_left < env.config.turnTimeoutWarningMillis) warn = true;
+            if (current_time_left <= env.config.turnTimeoutWarningMillis) warn = true;
             else current_time_left = roundToSecondsIntuitively(current_time_left);
             env.ui.setCountdown(current_time_left, warn);
         }
